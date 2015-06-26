@@ -34,8 +34,6 @@ namespace MistUtilsClient
         WebSocket conn = null;
         Avatar avatar = null;
         string GUID = null;
-        private NotifyIcon trayIcon;
-        private ContextMenu trayMenu;
         private ManagementEventWatcher gw2StartWatcher;
         private ManagementEventWatcher gw2StopWatcher;
 
@@ -50,35 +48,13 @@ namespace MistUtilsClient
             this.conn.Closed += new EventHandler(ConnClosed);
             this.conn.MessageReceived += new EventHandler<MessageReceivedEventArgs>(Received);
 
-            // Add a context menu to allow the program to be shut down.
-            trayMenu = new ContextMenu();
-            trayMenu.MenuItems.Add("Exit", OnExit);
-
-            // Create a tray icon.
-            trayIcon = new NotifyIcon();
-            trayIcon.Text = "MistUtils Client";
-            trayIcon.BalloonTipTitle = "MistUtils Client";
-            trayIcon.BalloonTipText = "Still running in the system tray!";
-            trayIcon.Icon = new Icon(SystemIcons.Application, 40, 40);
-
-            // Add menu to tray icon and show it.
-            trayIcon.ContextMenu = trayMenu;
-            trayIcon.Visible = true;
-
-            // Show the application when the tray icon is double-clicked.
-            trayIcon.MouseDoubleClick += new MouseEventHandler(trayIcon_MouseDoubleClick);
-
-            // Set up a registry keep to track whether or not the program should start with windows or not.
+            // Remove the registry key used by the older version.
             RegistryKey key = Registry.CurrentUser.OpenSubKey(
               @"Software\Microsoft\Windows\CurrentVersion\Run", true);
 
-            if (key.GetValue("MistUtils Client") == null)
+            if (key.GetValue("MistUtils Client") != null)
             {
-                checkBox1.Checked = false;
-            }
-            else
-            {
-                checkBox1.Checked = true;
+                key.DeleteValue("MistUtils Client");
             }
 
             // Link up to the Gw2 application and start watching it for changes.
@@ -91,14 +67,6 @@ namespace MistUtilsClient
 
             gw2StartWatcher = WatchForProcessStart("Gw2.exe");
             gw2StopWatcher = WatchForProcessEnd("Gw2.exe");
-        }
-
-        private void trayIcon_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-            // Show the application.
-            this.Show();
-            this.WindowState = FormWindowState.Normal;
-            this.ShowInTaskbar = true;
         }
 
         private void OnExit(object sender, EventArgs e)
@@ -227,39 +195,8 @@ namespace MistUtilsClient
                 this.conn.Close();
             }
 
-            // Remove it from the system tray.
-            trayIcon.Visible = false;
-            trayIcon.Dispose();
-
             gw2StartWatcher.Stop();
             gw2StopWatcher.Stop();
-        }
-
-        private void Form1_Resize(object sender, EventArgs e)
-        {
-            // When minimizing the application, remove it from the taskbar and keep it only in the system tray.
-            if (FormWindowState.Minimized == this.WindowState)
-            {
-                trayIcon.ShowBalloonTip(500);
-                this.Hide();
-                this.ShowInTaskbar = false;
-            }
-        }
-
-        private void checkBox1_Click(object sender, EventArgs e)
-        {
-            // Toggle whether or not the application starts with windows in the registry.
-            RegistryKey key = Registry.CurrentUser.OpenSubKey(
-              @"Software\Microsoft\Windows\CurrentVersion\Run", true);
-
-            if (checkBox1.Checked)
-            {
-                key.SetValue("MistUtils Client", "\"" + Application.ExecutablePath + "\"");
-            }
-            else
-            {
-                key.DeleteValue("MistUtils Client");
-            }
         }
 
         private ManagementEventWatcher WatchForProcessStart(string processName)
