@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Gw2Client")]
+[assembly: AssemblyTitle("Gw2ClientUninstallerActions")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("TichiPrograms")]
-[assembly: AssemblyProduct("Gw2Client")]
-[assembly: AssemblyCopyright("Copyright © Microsoft 2014")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("Gw2ClientUninstallerActions")]
+[assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("be0891d9-ed2c-4272-8836-9ebff09d4410")]
+[assembly: Guid("38a03e94-b9f4-4d36-9c92-c435e6b54e4d")]
 
 // Version information for an assembly consists of the following four values:
 //

@@ -48,15 +48,6 @@ namespace MistUtilsClient
             this.conn.Closed += new EventHandler(ConnClosed);
             this.conn.MessageReceived += new EventHandler<MessageReceivedEventArgs>(Received);
 
-            // Remove the registry key used by the older version.
-            RegistryKey key = Registry.CurrentUser.OpenSubKey(
-              @"Software\Microsoft\Windows\CurrentVersion\Run", true);
-
-            if (key.GetValue("MistUtils Client") != null)
-            {
-                key.DeleteValue("MistUtils Client");
-            }
-
             // Link up to the Gw2 application and start watching it for changes.
             Process[] pname = Process.GetProcessesByName("Gw2");
             if (pname.Length > 0)
@@ -164,7 +155,7 @@ namespace MistUtilsClient
                     avatar.StartWatchingPlayerInfo();
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Report to the user that the message couldn't be understood.
                 this.AppendText("Could not parse message.\n");
