@@ -82,7 +82,20 @@ namespace MistUtilsClient
             set;
         }
 
+        public bool IsBeingWatched
+        {
+            get;
+            set;
+        }
+
         public Avatar()
+        {
+            this.SetToEmpty(false);
+        }
+
+        private CancellationTokenSource tokenSource;
+
+        private void SetToEmpty(bool notifyObserver = true)
         {
             this.Position = new Position
             {
@@ -92,15 +105,25 @@ namespace MistUtilsClient
                 WorldID = 1,
                 MapID = 1
             };
-            this.Name = "Unknown";
-        }
+            this.Name = "";
 
-        private CancellationTokenSource tokenSource;
+            if (notifyObserver)
+            {
+                PlayerInfoChanged(this, new PlayerInfoChangedEventArgs(new Position{
+                    X = 0.0F,
+                    Y = 0.0F,
+                    Z = 0.0F,
+                    WorldID = 1,
+                    MapID = 1
+                }, this.Name));
+            }
+        }
 
         private void WatchPlayerInfo(CancellationToken token) {
             // If the watch has been requested to be stopped, exit the method.
-            if (token.IsCancellationRequested)
+            if (token.IsCancellationRequested || !this.IsBeingWatched)
             {
+                this.SetToEmpty(false);
                 return;
             }
 
@@ -110,8 +133,9 @@ namespace MistUtilsClient
 
             while (true)
             {
-                if (token.IsCancellationRequested)
+                if (token.IsCancellationRequested || !this.IsBeingWatched)
                 {
+                    this.SetToEmpty(false);
                     return;
                 }
 
@@ -151,16 +175,25 @@ namespace MistUtilsClient
 
         public void StartWatchingPlayerInfo()
         {
-            // Set up the process to watch the player information.
-            this.tokenSource = new CancellationTokenSource();
-            var token = tokenSource.Token;
-            Task.Factory.StartNew(() => WatchPlayerInfo(token), token);
+            if (!this.IsBeingWatched)
+            {
+                // Set up the process to watch the player information.
+                this.IsBeingWatched = true;
+                this.tokenSource = new CancellationTokenSource();
+                var token = tokenSource.Token;
+                Task.Factory.StartNew(() => WatchPlayerInfo(token), token);
+            }
         }
 
         public void StopWatchingPlayerInfo()
         {
-            // Stop the process watching the player information.
-            this.tokenSource.Cancel();
+            if (this.IsBeingWatched)
+            {
+                // Stop the process watching the player information.
+                this.IsBeingWatched = false;
+                this.tokenSource.Cancel();
+                this.SetToEmpty();
+            }
         }
     }
 }

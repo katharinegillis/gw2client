@@ -1,6 +1,6 @@
 ﻿namespace MistUtilsClient
 {
-    partial class Form1
+    partial class Gw2ClientForm
     {
         /// <summary>
         /// Required designer variable.
@@ -28,28 +28,27 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.displayLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
-            // textBox1
+            // displayLabel
             // 
-            this.textBox1.Location = new System.Drawing.Point(12, 12);
-            this.textBox1.Multiline = true;
-            this.textBox1.Name = "textBox1";
-            this.textBox1.ReadOnly = true;
-            this.textBox1.Size = new System.Drawing.Size(629, 216);
-            this.textBox1.TabIndex = 0;
+            this.displayLabel.AutoSize = true;
+            this.displayLabel.Location = new System.Drawing.Point(13, 13);
+            this.displayLabel.Name = "displayLabel";
+            this.displayLabel.Size = new System.Drawing.Size(0, 13);
+            this.displayLabel.TabIndex = 1;
             // 
-            // Form1
+            // Gw2ClientForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(654, 237);
-            this.Controls.Add(this.textBox1);
-            this.Name = "Form1";
-            this.Text = "MistUtils Client";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
-            this.Load += new System.EventHandler(this.Form1_Load);
+            this.Controls.Add(this.displayLabel);
+            this.Name = "Gw2ClientForm";
+            this.Text = "Gw2Client";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Gw2ClientForm_FormClosing);
+            this.Load += new System.EventHandler(this.Gw2ClientForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -57,7 +56,7 @@
 
         #endregion
 
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Label displayLabel;
     }
 }
 

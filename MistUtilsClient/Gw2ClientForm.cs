@@ -24,24 +24,34 @@ using System.Diagnostics;
 
 namespace MistUtilsClient
 {
-    public partial class Form1 : Form
+    public partial class Gw2ClientForm : Form
     {
-        public Form1()
+        public Gw2ClientForm(string sessionId)
         {
+            this.sessionId = sessionId;
             InitializeComponent();
         }
 
         WebSocket conn = null;
         Avatar avatar = null;
-        string GUID = null;
+        string sessionId = null;
         private ManagementEventWatcher gw2StartWatcher;
         private ManagementEventWatcher gw2StopWatcher;
+        private bool isConnectedToGw2 = false;
+        private DateTime lastMessageSentDate;
+        private string lastMessageSent;
+        private string errorMessage;
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void Gw2ClientForm_Load(object sender, EventArgs e)
         {
-            // Set up a connection to the websocket server.
-            this.GUID = Guid.NewGuid().ToString();
+            // Set up the session id.
+            if (this.sessionId == null)
+            {
+                this.sessionId = Guid.NewGuid().ToString();
+            }
+            this.UpdateText();
 
+            // Set up a connection to the websocket server.
             this.conn = new WebSocket("ws://www.tichi.org:44791");
             this.conn.Opened += new EventHandler(Connected);
             this.conn.Error += new EventHandler<SuperSocket.ClientEngine.ErrorEventArgs>(Errored);
@@ -52,7 +62,6 @@ namespace MistUtilsClient
             Process[] pname = Process.GetProcessesByName("Gw2");
             if (pname.Length > 0)
             {
-                this.AppendText("Establishing connection.");
                 this.conn.Open();
             }
 
@@ -68,19 +77,19 @@ namespace MistUtilsClient
 
         private void Connected(object sender, EventArgs e)
         {
-            // Show that the connection succeeded.
-            this.AppendText("Connection established!\n");
-
             // Send the registration request to the websocket.
             var msg = new {
                 method = "register",
                 type = "AvatarSource",
-                guid = this.GUID
+                guid = this.sessionId
             };
 
             var strMsg = JsonConvert.SerializeObject(msg);
             this.conn.Send(strMsg);
-            this.AppendText("Sent: " + strMsg + "\n");
+
+            this.lastMessageSent = "register";
+            this.lastMessageSentDate = DateTime.Now;
+            this.UpdateText();
         }
 
         private void avatar_PlayerInfoChanged(object sender, PlayerInfoChangedEventArgs e)
@@ -91,22 +100,29 @@ namespace MistUtilsClient
                 Position newPosition = e.GetPosition();
                 string newName = e.GetName();
 
-                // Send the update request to the websocket server.
-                var msg = new
+                if (newName != "")
                 {
-                    method = "updateAvatar",
-                    guid = this.GUID,
-                    name = newName,
-                    x = newPosition.X,
-                    y = newPosition.Y,
-                    z = newPosition.Z,
-                    mapId = newPosition.MapID,
-                    worldId = newPosition.WorldID
-                };
+                    // Send the update request to the websocket server.
+                    var msg = new
+                    {
+                        method = "updateAvatar",
+                        guid = this.sessionId,
+                        name = newName,
+                        x = newPosition.X,
+                        y = newPosition.Y,
+                        z = newPosition.Z,
+                        mapId = newPosition.MapID,
+                        worldId = newPosition.WorldID
+                    };
 
-                var strMsg = JsonConvert.SerializeObject(msg);
-                this.conn.Send(strMsg);
-                this.AppendText("Sent: " + strMsg + "\n");
+                    var strMsg = JsonConvert.SerializeObject(msg);
+                    this.conn.Send(strMsg);
+
+                    this.lastMessageSent = "updateAvatar";
+                    this.lastMessageSentDate = DateTime.Now;
+                }
+
+                this.UpdateText();
             }
             else
             {
@@ -118,7 +134,8 @@ namespace MistUtilsClient
         private void Errored(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
             // Report the error to the user.
-            this.AppendText("Error: " + e.Exception.Message + "\n");
+            this.errorMessage = e.Exception.Message;
+            this.UpdateText();
         }
 
         private void ConnClosed(object sender, EventArgs e)
@@ -133,14 +150,14 @@ namespace MistUtilsClient
 
             if (!this.IsDisposed)
             {
-                this.AppendText("Connection closed.\n");
+                this.UpdateText();
             }
         }
 
         private void Received(object sender, MessageReceivedEventArgs e)
         {
             // Report the received message to the user
-            this.AppendText("Received: " + e.Message + "\n");
+            this.errorMessage = "";
 
             try
             {
@@ -158,27 +175,50 @@ namespace MistUtilsClient
             catch (Exception)
             {
                 // Report to the user that the message couldn't be understood.
-                this.AppendText("Could not parse message.\n");
+                this.errorMessage = "Could not parse message: " + e.Message;
+                this.UpdateText();
             }
         }
 
-        delegate void AppendTextCallback(string text);
+        delegate void SetTextCallback(string text);
 
-        private void AppendText(string text)
+        private void SetText(string text)
         {
-            // Since threading is involved for watching the avatar information, check to see if the textbox is writeable, and either write to it if it is or invoke the textbox on the other thread to write to it.
-            if (this.textBox1.InvokeRequired)
+            if (this.IsDisposed)
             {
-                AppendTextCallback d = new AppendTextCallback(AppendText);
+                return;
+            }
+
+            // Since threading is involved for watching the avatar information, check to see if the textbox is writeable, and either write to it if it is or invoke the textbox on the other thread to write to it.
+            if (this.displayLabel.InvokeRequired)
+            {
+                SetTextCallback d = new SetTextCallback(SetText);
                 this.Invoke(d, new object[] { text });
             }
             else
             {
-                this.textBox1.AppendText(text);
+                this.displayLabel.Text = text;
             }
         }
 
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        private void UpdateText()
+        {
+            string displayText = "Session Id: " + this.sessionId + Environment.NewLine
+                + "Connected to Gw2: " + (this.isConnectedToGw2 ? "Yes" : "No") + Environment.NewLine
+                + "Character: " + (this.avatar != null ? this.avatar.Name : "") + Environment.NewLine
+                + "World Id: " + (this.avatar != null ? this.avatar.Position.WorldID.ToString() : "") + Environment.NewLine
+                + "Map Id: " + (this.avatar != null ? this.avatar.Position.MapID.ToString() : "") + Environment.NewLine
+                + "Position: " + (this.avatar != null ? "X" + this.avatar.Position.X.ToString() + " Y" + this.avatar.Position.Y.ToString() + " Z" + this.avatar.Position.Z.ToString() : "") + Environment.NewLine
+                + Environment.NewLine
+                + "Connected to Webserver: " + (this.conn != null && this.conn.State == WebSocketState.Open ? "Yes" : "No") + Environment.NewLine
+                + "Last Message Sent: " + (this.lastMessageSent != null ? "Method " + this.lastMessageSent + ", Time: " + this.lastMessageSentDate.ToString() : "") + Environment.NewLine
+                + Environment.NewLine
+                + "Last Error: " + (this.errorMessage != null ? this.errorMessage : "");
+
+            this.SetText(displayText);
+        }
+
+        private void Gw2ClientForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             // When closing the application, shut down all the resources such as the avatar watching code and the websocket server.
             if (this.conn.State == WebSocketState.Open)
@@ -233,15 +273,17 @@ namespace MistUtilsClient
         private void ProcessEnded(object sender, EventArrivedEventArgs e)
         {
             // Gw2 was closed, shut down the connection to the websocket server.
-            this.AppendText("Gw2 closed, shutting down connection.");
+            this.isConnectedToGw2 = false;
             this.conn.Close();
+            this.UpdateText();
         }
 
         private void ProcessStarted(object sender, EventArrivedEventArgs e)
         {
             // Gw2 was opened, start up the connection to the websocket server.
-            this.AppendText("Establishing connection.");
+            this.isConnectedToGw2 = true;
             this.conn.Open();
+            this.UpdateText();
         }
     }
 }
